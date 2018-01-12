@@ -19,8 +19,20 @@ RUN cd /tmp && \
 	git clone https://github.com/rordenlab/dcm2niix.git && \
 	cd dcm2niix && git checkout  v1.0.20171215 && \
 	mkdir build && cd build && \
-	cmake -DBATCH_VERSION=ON -DINSTALL_PREFIX=/usr -DUSE_OPENJPEG=ON .. && \
+	cmake -DBATCH_VERSION=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_OPENJPEG=ON .. && \
 	make && make install
+
+### plastimatch
+RUN cd /tmp && \
+	git clone https://gitlab.com/plastimatch/plastimatch.git && \
+	cd plastimatch && git checkout v1.7.0 && \
+	mkdir build && cd build && \
+	cmake -DINSTALL_PREFIX=/usr .. && \
+	make && make install && \
+	cp plastimatch /usr/bin
+
+### FreeSurfer
+#RUN curl -c -v -L ftp://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/6.0.0/freesurfer-Linux-centos6_x86_64-stable-pub-v6.0.0.tar.gz | tar xz -C /usr/
 
 #ENV PATH="/usr/dcm2niix:${PATH}"
 
