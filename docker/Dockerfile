@@ -32,9 +32,12 @@ RUN cd /tmp && \
 	cp plastimatch /usr/bin
 
 ### FreeSurfer
+### This one is 4.5Gb!
 #RUN curl -c -v -L ftp://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/6.0.0/freesurfer-Linux-centos6_x86_64-stable-pub-v6.0.0.tar.gz | tar xz -C /usr/
 
 #ENV PATH="/usr/dcm2niix:${PATH}"
+
+ADD get-pip.py /usr/src/get-pip.py
 
 ## Setup data
 
@@ -44,4 +47,5 @@ RUN /usr/src/setup_datasets.sh
 
 ## Get the cmake test setup
 ADD test /usr/src/test
+ADD tester.py /usr/src/tester.py
 RUN mkdir /usr/dcmheat && cd /usr/dcmheat && cmake /usr/src/test
