@@ -33,7 +33,9 @@ class dcmheatReconstructors:
       return (None,None)
     # plastimatch outputs output volume in any format supported by ITK
     outputVolume = os.path.join(outputFolder,"volume.nrrd")
-    call(["plastimatch","convert","--input",inputFolder,"--output-img",outputVolume])
+    stdoutFile = open(os.path.join(outputFolder,"stdout.log"),"w")
+    stderrFile = open(os.path.join(outputFolder,"stderr.log"),"w")
+    call(["plastimatch","convert","--input",inputFolder,"--output-img",outputVolume], stdout=stdoutFile, stderr=stderrFile)
     return (outputVolume, None)
 
   @staticmethod
@@ -43,10 +45,28 @@ class dcmheatReconstructors:
       return (None,None)
     # dcm2niix takes output directory and prefix for the output files, and it
     #  does output metadata in JSON
-    call(["dcm2niix","-f","volume","-o",outputFolder,inputFolder])
+    stdoutFile = open(os.path.join(outputFolder,"stdout.log"),"w")
+    stderrFile = open(os.path.join(outputFolder,"stderr.log"),"w")
+    call(["dcm2niix","-f","volume","-o",outputFolder,inputFolder], stdout=stdoutFile, stderr=stderrFile)
     outputVolume = os.path.join(outputFolder,"volume.nii")
     outputMetadata = os.path.join(outputFolder,"meta.json")
     return (outputVolume,outputMetadata)
+
+  @staticmethod
+  def dicom2niftiReconstructor(inputFolder, outputFolder):
+    if not which("dicom2nifti"):
+      print("dicom2nifti not found - skipping")
+      return (None,None)
+    # dcm2niix takes output directory and prefix for the output files, and it
+    #  does output metadata in JSON
+    stdoutFile = open(os.path.join(outputFolder,"stdout.log"),"w")
+    stderrFile = open(os.path.join(outputFolder,"stderr.log"),"w")
+    call(["dicom2nifti",inputFolder,outputFolder], stdout=stdoutFile, stderr=stderrFile)
+    volumeName = os.listdir(outputFolder)
+    if len(volumeName):
+      volumeName = volumeName[0]
+    outputVolume = os.path.join(outputFolder,volumeName)
+    return (outputVolume,None)
 
 def runTests(topLevelInputFolder,topLevelOutputFolder):
   print("Will run tests with "+topLevelInputFolder+" "+topLevelOutputFolder)
@@ -58,9 +78,11 @@ def runTests(topLevelInputFolder,topLevelOutputFolder):
 
   # assume fixed directory structure for test data, and organize output
   for dataset in os.listdir(topLevelInputFolder):
+    print("> Dataset: "+dataset)
     if dataset.startswith("."):
       continue
     for reconstructor in reconFunctions:
+      print(" >> Reconstructor: "+reconstructor)
       reconstructorCall = getattr(dcmheatReconstructors, reconstructor)
       inputFolder = os.path.join(topLevelInputFolder,dataset,"in")
       outputFolder = os.path.join(topLevelOutputFolder,dataset,reconstructor.split("Reconstructor")[0])

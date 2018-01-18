@@ -38,14 +38,16 @@ RUN cd /tmp && \
 #ENV PATH="/usr/dcm2niix:${PATH}"
 
 ADD get-pip.py /usr/src/get-pip.py
+RUN cd /usr/src && python get-pip.py && python get-pip.py && pip install dicom2nifti
 
 ## Setup data
+RUN mkdir /usr/data 
+RUN curl -c -v -o /usr/data/dcmheat.zip -L https://www.dropbox.com/s/h75cttxculzcvbt/dcmheat.zip?dl=1
+RUN cd /usr/data && unzip dcmheat.zip && rm dcmheat.zip
 
-RUN mkdir /usr/data
-ADD setup_datasets.sh /usr/src/setup_datasets.sh
-RUN /usr/src/setup_datasets.sh
-
-## Get the cmake test setup
-ADD test /usr/src/test
+## Run the tests
 ADD tester.py /usr/src/tester.py
-RUN mkdir /usr/dcmheat && cd /usr/dcmheat && cmake /usr/src/test
+RUN python /usr/src/tester.py -i /usr/data/dcmheat -o /usr/data/dcmheat
+
+## this helps looking at the results
+RUN yum install -y tree
