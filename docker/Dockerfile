@@ -1,11 +1,19 @@
-FROM thewtex/centos-build:latest
-#FROM fedorov/docker-centos-build:centos6
+#FROM thewtex/centos-build:latest
+FROM fedorov/docker-centos-build:centos7
+
+#FROM stevepieper/slicer
 
 #RUN apt-get update
 #RUN apt-get install --yes curl zip unzip
 
 ADD setup_slicer.sh /usr/src/setup_slicer.sh
 RUN /usr/src/setup_slicer.sh
+
+RUN rpm --import https://winswitch.org/gpg.asc && \
+       cd /etc/yum.repos.d/ && \
+       wget https://winswitch.org/downloads/CentOS/winswitch.repo && \
+       yum -y install xpra
+
 
 #ADD setup_dcm2niix.sh /usr/src/setup_dcm2niix.sh
 #RUN /usr/src/setup_dcm2niix.sh
@@ -14,7 +22,7 @@ RUN /usr/src/setup_slicer.sh
 
 ### dcm2niix - build from source, since binaries have issues with missing GLIBC version
 ###  installs to /usr/local, in the PATH
-
+RUN yum install -y libstdc++-static
 RUN cd /tmp && \
 	git clone https://github.com/rordenlab/dcm2niix.git && \
 	cd dcm2niix && git checkout  v1.0.20171215 && \
@@ -25,7 +33,7 @@ RUN cd /tmp && \
 ### plastimatch
 RUN cd /tmp && \
 	git clone https://gitlab.com/plastimatch/plastimatch.git && \
-	cd plastimatch && git checkout v1.7.0 && \
+	cd plastimatch && git checkout v1.7.2 && \
 	mkdir build && cd build && \
 	cmake -DINSTALL_PREFIX=/usr .. && \
 	make && make install && \
@@ -37,17 +45,22 @@ RUN cd /tmp && \
 
 #ENV PATH="/usr/dcm2niix:${PATH}"
 
+### python tools
 ADD get-pip.py /usr/src/get-pip.py
-RUN cd /usr/src && python get-pip.py && python get-pip.py && pip install dicom2nifti
+RUN python /usr/src/get-pip.py && pip install nibabel
 
 ## Setup data
-RUN mkdir /usr/data 
-RUN curl -c -v -o /usr/data/dcmheat.zip -L https://www.dropbox.com/s/h75cttxculzcvbt/dcmheat.zip?dl=1
-RUN cd /usr/data && unzip dcmheat.zip && rm dcmheat.zip
 
-## Run the tests
-ADD tester.py /usr/src/tester.py
-RUN python /usr/src/tester.py -i /usr/data/dcmheat -o /usr/data/dcmheat
+RUN mkdir /usr/data
+ADD setup_datasets.sh /usr/src/setup_datasets.sh
+RUN /usr/src/setup_datasets.sh
 
-## this helps looking at the results
-RUN yum install -y tree
+### This is needed to run Slicer python scripts in a headless mode
+RUN xpra --xvfb="Xorg +extension GLX -config /etc/xpra/xorg.conf -logfile ${HOME}/.xpra/xorg.log"  start :9
+ENV DISPLAY :9
+
+## Get the cmake test setup
+ADD test /usr/src/test
+RUN mkdir /usr/dcmheat && cd /usr/dcmheat && cmake /usr/src/test
+
+ADD SlicerConvert.py /usr/src/SlicerConvert.py
