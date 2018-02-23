@@ -64,3 +64,16 @@ ADD test /usr/src/test
 RUN mkdir /usr/dcmheat && cd /usr/dcmheat && cmake /usr/src/test
 
 ADD SlicerConvert.py /usr/src/SlicerConvert.py
+
+# Didn't figure this one out - will start xpra in the runner script
+#RUN pip install supervisor
+#RUN mkdir -p /etc/supervisord/conf.d 
+#ADD supervisord.conf /etc/supervisord/supervisord.conf
+#ADD supervisord.service /usr/lib/systemd/system/supervisord.service
+#RUN mkdir -p /var/log/supervisor
+#RUN systemctl enable supervisord
+
+ADD etc/X11 /etc/X11
+
+RUN mkdir -p /src/.config/www.na-mic.org && mkdir /src/SlicerDB
+ADD Slicer.ini /src/.config/www.na-mic.org

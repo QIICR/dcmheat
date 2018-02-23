@@ -29,27 +29,29 @@ if args.gdcm:
 
 from DICOMLib import DICOMUtils
 
+print('Slicer database: '+str(slicer.dicomDatabase))
+
 indexer = ctk.ctkDICOMIndexer()
 dbDir = "/tmp/SlicerDB"
 print("Temporary directory: "+dbDir)
-with DICOMUtils.TemporaryDICOMDatabase(dbDir) as db:
-  indexer.addDirectory(db, args.input)
-  indexer.waitForImportFinished()
+DICOMUtils.openTemporaryDatabase(dbDir)
+db = slicer.dicomDatabase
+indexer.addDirectory(db, args.input)
+indexer.waitForImportFinished()
 
 slicer.util.selectModule('DICOM')
-
 popup = slicer.modules.DICOMWidget.detailsPopup
 popup.open()
 
 fileLists = []
-for patient in slicer.dicomDatabase.patients():
-    print(patient)
-    for study in slicer.dicomDatabase.studiesForPatient(patient):
-        print(study)
-        for series in slicer.dicomDatabase.seriesForStudy(study):
-            print(series)
-            fileLists.append(slicer.dicomDatabase.filesForSeries(series))
-print(fileLists)
+for patient in db.patients():
+    print("Patient:"+patient)
+    for study in db.studiesForPatient(patient):
+        print("Study:"+study)
+        for series in db.seriesForStudy(study):
+            print("Series:"+series)
+            fileLists.append(db.filesForSeries(series))
+print("File lists after the loop:"+str(fileLists))
 popup.fileLists = fileLists
 
 popup.examineForLoading()
@@ -68,6 +70,6 @@ else:
     slicer.util.saveNode(nodes[0], path)
 
 import shutil
-shutil.rmtree(dbDir)
+shutil.rmtree("/tmp/SlicerDB")
 
-slicer.app.quit()
+sys.exit()
