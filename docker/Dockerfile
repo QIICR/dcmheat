@@ -50,12 +50,6 @@ RUN cd /tmp && \
 ADD get-pip.py /usr/src/get-pip.py
 RUN python /usr/src/get-pip.py && pip install nibabel
 
-## Setup data
-
-RUN mkdir /usr/data
-ADD setup_datasets.sh /usr/src/setup_datasets.sh
-RUN /usr/src/setup_datasets.sh
-
 ### This is needed to run Slicer python scripts in a headless mode
 RUN xpra --xvfb="Xorg +extension GLX -config /etc/xpra/xorg.conf -logfile ${HOME}/.xpra/xorg.log"  start :9
 ENV DISPLAY :9
@@ -64,11 +58,10 @@ ENV DISPLAY :9
 ADD test /usr/src/test
 RUN mkdir /usr/dcmheat && cd /usr/dcmheat && cmake /usr/src/test
 
-ADD SlicerConvert.py /usr/src/SlicerConvert.py
 
 # Didn't figure this one out - will start xpra in the runner script
 #RUN pip install supervisor
-#RUN mkdir -p /etc/supervisord/conf.d 
+#RUN mkdir -p /etc/supervisord/conf.d
 #ADD supervisord.conf /etc/supervisord/supervisord.conf
 #ADD supervisord.service /usr/lib/systemd/system/supervisord.service
 #RUN mkdir -p /var/log/supervisor
@@ -78,3 +71,16 @@ ADD etc/X11 /etc/X11
 
 RUN mkdir -p /src/.config/www.na-mic.org && mkdir /src/SlicerDB
 ADD Slicer.ini /src/.config/www.na-mic.org
+
+ENV PATH "/usr/slicer:${PATH}"
+
+ADD tester.py /src
+RUN yum install -y tree
+RUN pip install dicom2nifti==1.2.21
+
+## Setup data
+
+RUN mkdir /usr/data
+ADD setup_datasets.sh /usr/src/setup_datasets.sh
+RUN /usr/src/setup_datasets.sh
+ADD SlicerConvert.py /usr/src/SlicerConvert.py

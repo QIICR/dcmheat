@@ -27,41 +27,69 @@ class dcmheatReconstructors:
   # single series corresponding to a 3d volume)
   # output is a tuple of the reconstructed volume and metadata files
   @staticmethod
-  def plastimatchReconstructor(inputFolder, outputFolder):
+  def plastimatchReconstructor(inputFolder, outputFolder, outputLogsFolder):
     if not which("plastimatch"):
       print("plastimatch not found - skipping")
       return (None,None)
     # plastimatch outputs output volume in any format supported by ITK
     outputVolume = os.path.join(outputFolder,"volume.nrrd")
-    stdoutFile = open(os.path.join(outputFolder,"stdout.log"),"w")
-    stderrFile = open(os.path.join(outputFolder,"stderr.log"),"w")
+    stdoutFile = open(os.path.join(outputLogsFolder,"stdout.log"),"w")
+    stderrFile = open(os.path.join(outputLogsFolder,"stderr.log"),"w")
     call(["plastimatch","convert","--input",inputFolder,"--output-img",outputVolume], stdout=stdoutFile, stderr=stderrFile)
     return (outputVolume, None)
 
   @staticmethod
-  def dcm2niixReconstructor(inputFolder, outputFolder):
+  def dcm2niixReconstructor(inputFolder, outputFolder, outputLogsFolder):
     if not which("dcm2niix"):
       print("dcm2niix not found - skipping")
       return (None,None)
     # dcm2niix takes output directory and prefix for the output files, and it
     #  does output metadata in JSON
-    stdoutFile = open(os.path.join(outputFolder,"stdout.log"),"w")
-    stderrFile = open(os.path.join(outputFolder,"stderr.log"),"w")
+    stdoutFile = open(os.path.join(outputLogsFolder,"stdout.log"),"w")
+    stderrFile = open(os.path.join(outputLogsFolder,"stderr.log"),"w")
     call(["dcm2niix","-f","volume","-o",outputFolder,inputFolder], stdout=stdoutFile, stderr=stderrFile)
     outputVolume = os.path.join(outputFolder,"volume.nii")
     outputMetadata = os.path.join(outputFolder,"meta.json")
     return (outputVolume,outputMetadata)
 
   @staticmethod
-  def dicom2niftiReconstructor(inputFolder, outputFolder):
+  def dicom2niftiReconstructor(inputFolder, outputFolder, outputLogsFolder):
     if not which("dicom2nifti"):
       print("dicom2nifti not found - skipping")
       return (None,None)
     # dcm2niix takes output directory and prefix for the output files, and it
     #  does output metadata in JSON
-    stdoutFile = open(os.path.join(outputFolder,"stdout.log"),"w")
-    stderrFile = open(os.path.join(outputFolder,"stderr.log"),"w")
+    stdoutFile = open(os.path.join(outputLogsFolder,"stdout.log"),"w")
+    stderrFile = open(os.path.join(outputLogsFolder,"stderr.log"),"w")
     call(["dicom2nifti",inputFolder,outputFolder], stdout=stdoutFile, stderr=stderrFile)
+    volumeName = os.listdir(outputFolder)
+    if len(volumeName):
+      volumeName = volumeName[0]
+    outputVolume = os.path.join(outputFolder,volumeName)
+    return (outputVolume,None)
+
+  @staticmethod
+  def slicerDCMTKReconstructor(inputFolder, outputFolder, outputLogsFolder):
+    # Slicer takes output directory and prefix for the output files, and
+    #  generates a reconstructed 3d volume
+    stdoutFile = open(os.path.join(outputLogsFolder,"stdout.log"),"w")
+    stderrFile = open(os.path.join(outputLogsFolder,"stderr.log"),"w")
+    # expect Slicer app binary is in the path
+    call(["Slicer","--python-script","/usr/src/SlicerConvert.py","--dcmtk","--input",inputFolder,"--output",outputFolder], stdout=stdoutFile, stderr=stderrFile)
+    volumeName = os.listdir(outputFolder)
+    if len(volumeName):
+      volumeName = volumeName[0]
+    outputVolume = os.path.join(outputFolder,volumeName)
+    return (outputVolume,None)
+
+  @staticmethod
+  def slicerGDCMReconstructor(inputFolder, outputFolder, outputLogsFolder):
+    # Slicer takes output directory and prefix for the output files, and
+    #  generates a reconstructed 3d volume
+    stdoutFile = open(os.path.join(outputLogsFolder,"stdout.log"),"w")
+    stderrFile = open(os.path.join(outputLogsFolder,"stderr.log"),"w")
+    # expect Slicer app binary is in the path
+    call(["Slicer","--python-script","/usr/src/SlicerConvert.py","--gdcm","--input",inputFolder,"--output",outputFolder], stdout=stdoutFile, stderr=stderrFile)
     volumeName = os.listdir(outputFolder)
     if len(volumeName):
       volumeName = volumeName[0]
@@ -88,7 +116,11 @@ def runTests(topLevelInputFolder,topLevelOutputFolder):
       outputFolder = os.path.join(topLevelOutputFolder,dataset,reconstructor.split("Reconstructor")[0])
       if not os.path.exists(outputFolder):
         os.makedirs(outputFolder)
-      (volume,meta) = reconstructorCall(inputFolder,outputFolder)
+      if not os.path.exists(os.path.join(outputFolder,"logs")):
+        os.makedirs(os.path.join(outputFolder,"logs"))
+      if not os.path.exists(os.path.join(outputFolder,"out")):
+        os.makedirs(os.path.join(outputFolder,"out"))
+      (volume,meta) = reconstructorCall(inputFolder,outputFolder+"/out",outputFolder+"/logs")
 
 
   return
