@@ -1,5 +1,6 @@
 #FROM thewtex/centos-build:latest
-FROM fedorov/docker-centos-build:centos7
+#FROM fedorov/docker-centos-build:centos7
+FROM centosbuild/centos7:latest
 
 #FROM stevepieper/slicer
 
